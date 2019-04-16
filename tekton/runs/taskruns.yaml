@@ -1,0 +1,13 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: test-git-branch
+spec:
+  inputs:
+    resources:
+      - name: gitspace
+        resourceRef:
+          name: rules-branch
+  taskRef:
+    name: dump-workspace-task

@@ -1,3 +1,16 @@
+/*
+Copyright 2019 The Tekton Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package wiregithub
 
 import (
@@ -15,40 +28,20 @@ import (
 	"tektoncd.dev/experimental/pkg/util"
 )
 
-type GitHubTokenPath string
-
-var ProviderSet = wire.NewSet(NewGitHubClient, NewGitHubTokenPathFlag, NewGitOwner, NewGitRepo, NewGitRepoFlag,
-	NewGitHubUser, NewNameFlag, NewGitHubWebHookSecret, cligithub.IssueClient{})
-var gitHubTokenPathFlag string
+var ProviderSet = wire.NewSet(NewGitHubClient, NewGitOwner, NewGitRepo, NewGitRepoFlag,
+	NewGitHubUser, NewNameFlag, cligithub.IssueClient{}, NewGitHubWebHookSecret, NewGitHubWebHookSecretPath,
+	NewGitHubToken, NewGitHubTokenPath)
 
 func Flags(command *cobra.Command) {
-	var secretPath, tokenPath, home string
-	home = util.HomeDir()
-	if len(home) > 0 {
-		tokenPath = filepath.Join(home, ".github", "token")
-		secretPath = filepath.Join(home, ".github", "secret")
-	} else {
-		command.MarkFlagRequired("githubtoken")
-		command.MarkFlagRequired("secret")
-	}
-
-	command.Flags().StringVar(&gitHubTokenPathFlag, "githubtoken", tokenPath, "path to GitHub token file")
-
-	command.Flags().StringVar(&gitWebHookSecretFlag, "secret", secretPath, "path to WebHook secret file")
-	command.MarkFlagRequired("secret")
-}
-
-func WebhookFlags(command *cobra.Command) {
 	var path, home string
 	home = util.HomeDir()
 	if len(home) > 0 {
 		path = filepath.Join(home, ".github", "token")
 	} else {
-		path = ""
-		command.MarkFlagRequired("githubtoken")
+		command.MarkFlagRequired("github-token")
 	}
 
-	command.Flags().StringVar(&gitHubTokenPathFlag, "githubtoken", path, "path to GitHub token file")
+	command.Flags().StringVar(&gitHubTokenPathFlag, "github-token", path, "path to GitHub token file.")
 
 	command.Flags().StringVar(&gitRepoFlag, "repo", "", "repository - e.g. kubernetes/kubectl")
 	command.MarkFlagRequired("repo")
@@ -57,23 +50,38 @@ func WebhookFlags(command *cobra.Command) {
 	command.MarkFlagRequired("name")
 }
 
-func NewGitHubTokenPathFlag() GitHubTokenPath {
-	return GitHubTokenPath(gitHubTokenPathFlag)
+func WebhookFlags(command *cobra.Command) {
+	var secretPath, tokenPath, home string
+	home = util.HomeDir()
+	if len(home) > 0 {
+		tokenPath = filepath.Join(home, ".github", "token")
+		secretPath = filepath.Join(home, ".github", "secret")
+	} else {
+		command.MarkFlagRequired("github-token")
+		command.MarkFlagRequired("webhook-secret")
+	}
+
+	command.Flags().StringVar(&gitHubTokenPathFlag, "github-token", tokenPath, "path to GitHub token file.")
+	command.Flags().StringVar(&gitWebHookSecretPathFlag, "webhook-secret", secretPath, "path to GitHub WebHook secret file.")
 }
 
-func NewGitHubClient(path GitHubTokenPath) (*github.Client, error) {
-	dat, err := ioutil.ReadFile(string(path))
-	if err != nil {
-		return nil, fmt.Errorf("unable to create GitHub client: %v\n", err)
-	}
+var gitHubTokenPathFlag string
+
+func NewGitHubTokenPath() cligithub.GitHubTokenPath {
+	return cligithub.GitHubTokenPath(gitHubTokenPathFlag)
+}
+
+func NewGitHubToken(path cligithub.GitHubTokenPath) (cligithub.GitHubToken, error) {
+	d, err := ioutil.ReadFile(string(path))
+	return cligithub.GitHubToken(d), err
+}
+
+func NewGitHubClient(dat cligithub.GitHubToken) *github.Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: string(dat)})
 	tc := oauth2.NewClient(ctx, ts)
 	gc := github.NewClient(tc)
-	if err != nil {
-		return nil, fmt.Errorf("unable to add GitHub client: %v\n", err)
-	}
-	return gc, nil
+	return gc
 }
 
 var gitRepoFlag string
@@ -110,8 +118,18 @@ func NewGitHubUser(ghc *github.Client) (*github.User, error) {
 	return user, err
 }
 
-var gitWebHookSecretFlag string
+var gitWebHookSecretPathFlag string
 
-func NewGitHubWebHookSecret() cligithub.GitHubWebHookSecret {
-	return cligithub.GitHubWebHookSecret([]byte(gitWebHookSecretFlag))
+func NewGitHubWebHookSecret(p cligithub.GitHubWebHookSecretPath) (cligithub.GitHubWebHookSecret, error) {
+	sec, err := ioutil.ReadFile(string(p))
+	if err != nil {
+		return "", err
+	}
+
+	sec = []byte(strings.TrimSpace(string(sec)))
+	return cligithub.GitHubWebHookSecret(sec), nil
+}
+
+func NewGitHubWebHookSecretPath() cligithub.GitHubWebHookSecretPath {
+	return cligithub.GitHubWebHookSecretPath(gitWebHookSecretPathFlag)
 }

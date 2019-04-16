@@ -12,9 +12,19 @@ import (
 // Injectors from wire.go:
 
 func InitializeTrigger() (*GitHubEventMonitor, error) {
-	gitHubWebHookSecret := wiregithub.NewGitHubWebHookSecret()
+	gitHubWebHookSecretPath := wiregithub.NewGitHubWebHookSecretPath()
+	gitHubWebHookSecret, err := wiregithub.NewGitHubWebHookSecret(gitHubWebHookSecretPath)
+	if err != nil {
+		return nil, err
+	}
+	gitHubTokenPath := wiregithub.NewGitHubTokenPath()
+	gitHubToken, err := wiregithub.NewGitHubToken(gitHubTokenPath)
+	if err != nil {
+		return nil, err
+	}
 	gitHubEventMonitor := &GitHubEventMonitor{
 		Secret: gitHubWebHookSecret,
+		Token:  gitHubToken,
 	}
 	return gitHubEventMonitor, nil
 }

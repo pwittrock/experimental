@@ -117,4 +117,7 @@ func (ic *IssueClient) GetReleaseComment(pr *github.Issue) (*github.IssueComment
 	return i, err
 }
 
-type GitHubWebHookSecret []byte
+type GitHubWebHookSecretPath string
+type GitHubWebHookSecret string
+type GitHubTokenPath string
+type GitHubToken string
