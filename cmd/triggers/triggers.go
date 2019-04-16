@@ -188,6 +188,8 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		}
 
 		for i := range run {
+			run[i].SetGenerateName(run[i].GetName())
+			run[i].SetName("")
 			// create the run tasks
 			c := exec.Command("kubectl", "create", "-f", "-")
 			m, err := yaml.Marshal(run[i])
