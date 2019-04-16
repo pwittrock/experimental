@@ -170,7 +170,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 	runsPath := filepath.Join(tekPath, "runs")
 	if _, err := os.Stat(runsPath); err == nil {
 		fmt.Printf("creating runs...\n")
-		files, err := ioutil.ReadDir(tekPath)
+		files, err := ioutil.ReadDir(runsPath)
 		if err != nil {
 			return err
 		}
