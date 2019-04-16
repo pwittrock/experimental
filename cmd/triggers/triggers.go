@@ -196,7 +196,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		// 	return err
 		// }
 
-		t, err := template.ParseGlob(filepath.Join(tekPath, "*.yaml"))
+		t, err := template.ParseGlob(filepath.Join(runsPath, "*.yaml"))
 		if err != nil {
 			return err
 		}
