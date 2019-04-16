@@ -9,7 +9,12 @@ spec:
   inputs:
     resources:
       - name: gitspace
-        resourceRef:
-          name: rules-branch
+        resourceSpec:
+          type: git
+          params:
+            - name: revision
+              value: {{.Ref}}
+            - name: url
+              value: {{.URL}}
   taskRef:
     name: dump-workspace-task

@@ -21,6 +21,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"text/template"
 
 	"github.com/google/go-github/github"
 	"github.com/google/wire"
@@ -30,9 +32,7 @@ import (
 	httpv4 "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
-
 	"tektoncd.dev/experimental/pkg/cligithub"
-	"tektoncd.dev/experimental/pkg/clik8s"
 	"tektoncd.dev/experimental/pkg/wirecli"
 	"tektoncd.dev/experimental/pkg/wirecli/wiregithub"
 )
@@ -138,7 +138,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		return err
 	}
 
-	fmt.Printf("cloned https://github.com/%s\n", event.GetRepo().GetFullName())
+	fmt.Printf("cloned %s\n", r)
 
 	fmt.Printf("reading files...\n")
 	files, err := ioutil.ReadDir(loc)
@@ -171,9 +171,51 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 
 	runsPath := filepath.Join(tekPath, "runs")
 	if _, err := os.Stat(runsPath); err == nil {
-		configs, err := InitializeResourceConfigs(clik8s.ResourceConfigPath(runsPath))
+		// files, err := ioutil.ReadDir(runsPath)
+		// if err != nil {
+		// 	return err
+		// }
+		//
+		// err = filepath.Walk(tekPath, func(path string, info os.FileInfo, err error) error {
+		// 	data, err := ioutil.ReadFile(path)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	objs := strings.Split(string(data), "---")
+		// 	for _, o := range objs {
+		// 		body := map[string]interface{}{}
+		// 		if err := yaml.Unmarshal([]byte(o), &body); err != nil {
+		// 			return err
+		// 		}
+		// 		configs = append(configs, &unstructured.Unstructured{Object: body})
+		// 	}
+		//
+		// 	return nil
+		// })
+		// if err != nil {
+		// 	return err
+		// }
+
+		t, err := template.ParseGlob(filepath.Join(tekPath, "*.yaml"))
 		if err != nil {
 			return err
+		}
+		buf := &bytes.Buffer{}
+		err = t.Execute(buf, Data{
+			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
+			URL: r,
+		})
+		if err != nil {
+			return err
+		}
+		objs := strings.Split(string(buf.String()), "---")
+		var configs []*unstructured.Unstructured
+		for _, o := range objs {
+			body := map[string]interface{}{}
+			if err := yaml.Unmarshal([]byte(o), &body); err != nil {
+				return err
+			}
+			configs = append(configs, &unstructured.Unstructured{Object: body})
 		}
 
 		var run []*unstructured.Unstructured
@@ -213,5 +255,9 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 
 	fmt.Printf("done\n")
 	return nil
+}
 
+type Data struct {
+	Ref string
+	URL string
 }
