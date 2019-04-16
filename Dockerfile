@@ -25,6 +25,8 @@ RUN chmod +x ./kubectl
 
 # final image
 FROM ubuntu
+RUN apt-get update
+RUN apt-get install git -y
 COPY --from=kubectl_binary /kubectl /usr/bin
 COPY --from=tekctl_binary /tekctl /usr/bin
 ENTRYPOINT ["tekctl"]
