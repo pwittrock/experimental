@@ -50,7 +50,7 @@ func GetCommand() *cobra.Command {
 	}
 	wiregithub.WebhookFlags(c)
 	p = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
-	refs = c.Flags().StringSlice("refs", []string{"heads/master"}, ".")
+	refs = c.Flags().StringSlice("refs", []string{}, ".")
 	return c
 }
 
@@ -92,15 +92,17 @@ func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
-	found := false
-	for _, ref := range *refs {
-		ref = path.Join("refs", ref)
-		if ref == *event.Ref {
-			found = true
+	if len(*refs) > 0 {
+		found := false
+		for _, ref := range *refs {
+			ref = path.Join("refs", ref)
+			if ref == *event.Ref {
+				found = true
+			}
 		}
-	}
-	if !found {
-		return nil
+		if !found {
+			return nil
+		}
 	}
 
 	fmt.Printf("=====\n%+v\n=====\n", event)
@@ -135,7 +137,19 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 	}
 
 	fmt.Printf("cloned https://github.com/%s\n", event.GetRepo().GetFullName())
+
+	fmt.Printf("reading files...\n")
+	files, err := ioutil.ReadDir(loc)
+	if err != nil {
+		return err
+	}
+	for i := range files {
+		file := files[i]
+		fmt.Printf("cloned file: %s\n", file.Name())
+	}
+
 	tekPath := filepath.Join(loc, "tekton")
+
 	if _, err := os.Stat(tekPath); os.IsNotExist(err) {
 		fmt.Printf("missing tekton directory\n")
 		return nil
@@ -164,16 +178,6 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 			file := files[i]
 			fmt.Printf("cloned file: %s\n", file.Name())
 		}
-	}
-
-	fmt.Printf("reading files...\n")
-	files, err := ioutil.ReadDir(tekPath)
-	if err != nil {
-		return err
-	}
-	for i := range files {
-		file := files[i]
-		fmt.Printf("cloned file: %s\n", file.Name())
 	}
 
 	fmt.Printf("done\n")
