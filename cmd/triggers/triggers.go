@@ -217,6 +217,9 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		var configs []*unstructured.Unstructured
 		for i := range objs {
 			o := objs[i]
+			if len(strings.TrimSpace(o)) == 0 {
+				continue
+			}
 			body := map[string]interface{}{}
 			if err := yaml.Unmarshal([]byte(o), &body); err != nil {
 				return err
@@ -227,7 +230,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		var run []*unstructured.Unstructured
 		for i := range configs {
 			config := configs[i]
-			fmt.Printf("found object %s\n", config.GetName())
+			fmt.Printf("found object %s %s\n", config.GetName(), config.GetGenerateName())
 			if v, found := config.GetAnnotations()["tekctl.tektoncd.dev/trigger"]; found {
 				if v == "push" {
 					fmt.Printf("running %s\n", config.GetGenerateName())
