@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 
 	// "os/exec"
@@ -28,6 +27,7 @@ import (
 	"github.com/google/wire"
 	"github.com/spf13/cobra"
 	gitv4 "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	httpv4 "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
 	"tektoncd.dev/experimental/pkg/cligithub"
@@ -95,7 +95,6 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 	if len(*refs) > 0 {
 		found := false
 		for _, ref := range *refs {
-			ref = path.Join("refs", ref)
 			if ref == *event.Ref {
 				found = true
 			}
@@ -124,9 +123,10 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 	fmt.Printf("cloning repository %s into %s\n", r, loc)
 
 	_, err = gitv4.PlainClone(loc, false, &gitv4.CloneOptions{
-		URL:      r,
-		Progress: os.Stdout,
-		Depth:    1,
+		URL:           r,
+		Progress:      os.Stdout,
+		Depth:         1,
+		ReferenceName: plumbing.ReferenceName(event.GetRef()),
 		Auth: &httpv4.BasicAuth{
 			Username: "", // anything except an empty string
 			Password: string(s.Secret),
