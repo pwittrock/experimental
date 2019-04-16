@@ -87,6 +87,7 @@ func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch event := event.(type) {
 	case *github.PushEvent:
 		err = s.DoPush(event)
+	case *github.Event
 	}
 
 	if err != nil {
@@ -159,7 +160,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		return nil
 	}
 
-	cfgPath := filepath.Join(tekPath, "config")
+	cfgPath := filepath.Join(tekPath, "apply")
 	if _, err := os.Stat(cfgPath); err == nil {
 		fmt.Printf("applying config...\n")
 		cmd := exec.Command("kubectl", "apply", "--filename", cfgPath, "--recursive")
@@ -171,7 +172,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		}
 	}
 
-	runsPath := filepath.Join(tekPath, "runs")
+	runsPath := filepath.Join(tekPath, "create")
 	if _, err := os.Stat(runsPath); err == nil {
 		t, err := template.ParseGlob(filepath.Join(runsPath, "*.yaml"))
 		if err != nil {
