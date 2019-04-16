@@ -201,12 +201,15 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 			return err
 		}
 		buf := &bytes.Buffer{}
-		err = t.Execute(buf, Data{
-			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
-			URL: r,
-		})
-		if err != nil {
-			return err
+		for _, tmpl := range t.Templates() {
+			err = tmpl.Execute(buf, Data{
+				Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
+				URL: r,
+			})
+			if err != nil {
+				return err
+			}
+			buf.WriteString("\n---\n")
 		}
 
 		fmt.Printf("found runs\n%s\n", buf.String())
