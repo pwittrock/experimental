@@ -22,16 +22,14 @@ import (
 	"strings"
 
 	"github.com/google/wire"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/kustomize"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kustomize/pkg/fs"
 	"sigs.k8s.io/yaml"
 	"tektoncd.dev/experimental/pkg/clik8s"
-	"tektoncd.dev/experimental/pkg/util"
 
 	// for connecting to various types of hosted clusters
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -39,44 +37,21 @@ import (
 
 // ProviderSet defines dependencies for initializing Kubernetes objects
 var ProviderSet = wire.NewSet(
-	NewKubernetesClientSet, NewKubeConfigPathFlag,
-	NewRestConfig, NewMasterFlag, NewResourceConfig, NewFileSystem)
-var kubeConfigPathFlag string
-var master string
-
-// Flags registers flags for talkig to a Kubernetes cluster
-func Flags(command *cobra.Command) {
-	var path string
-	if len(util.HomeDir()) > 0 {
-		path = filepath.Join(util.HomeDir(), ".kube", "config")
-	} else {
-		path = ""
-		command.MarkFlagRequired("kubeconfig")
-	}
-	command.Flags().StringVar(&kubeConfigPathFlag,
-		"kubeconfig", path, "absolute path to the kubeconfig file")
-	command.Flags().StringVar(&master,
-		"master", "", "address of master")
-}
-
-// NewKubeConfigPathFlag provides the path to the kubeconfig file
-func NewKubeConfigPathFlag() clik8s.KubeConfigPath {
-	return clik8s.KubeConfigPath(kubeConfigPathFlag)
-}
-
-// NewMasterFlag returns the MasterURL parsed from the `--master` flag
-func NewMasterFlag() clik8s.MasterURL {
-	return clik8s.MasterURL(master)
-}
+	NewKubernetesClientSet, NewRestConfig, NewResourceConfig, NewFileSystem, NewDynamicClient)
 
 // NewRestConfig returns a new rest.Config parsed from --kubeconfig and --master
-func NewRestConfig(master clik8s.MasterURL, path clik8s.KubeConfigPath) (*rest.Config, error) {
-	return clientcmd.BuildConfigFromFlags(string(master), string(path))
+func NewRestConfig() (*rest.Config, error) {
+	return rest.InClusterConfig()
 }
 
 // NewKubernetesClientSet provides a clientset for talking to k8s clusters
 func NewKubernetesClientSet(c *rest.Config) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(c)
+}
+
+// NewDynamicClient provides a dynamic.Interface
+func NewDynamicClient(c *rest.Config) (dynamic.Interface, error) {
+	return dynamic.NewForConfig(c)
 }
 
 // NewFileSystem provides a real FileSystem

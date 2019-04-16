@@ -3,6 +3,8 @@ apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
 metadata:
   generateName: test-git-branch
+  annotations:
+    tekctl.tektoncd.dev/trigger: "push"
 spec:
   inputs:
     resources:

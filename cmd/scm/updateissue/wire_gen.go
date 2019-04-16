@@ -48,9 +48,7 @@ func InitializeUpdater(resourceConfigPath clik8s.ResourceConfigPath) (*issue.Upd
 		return nil, err
 	}
 	client := wiregithub.NewGitHubClient(gitHubToken)
-	masterURL := wirek8s.NewMasterFlag()
-	kubeConfigPath := wirek8s.NewKubeConfigPathFlag()
-	config, err := wirek8s.NewRestConfig(masterURL, kubeConfigPath)
+	config, err := wirek8s.NewRestConfig()
 	if err != nil {
 		return nil, err
 	}

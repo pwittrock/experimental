@@ -51,18 +51,8 @@ func Flags(command *cobra.Command) {
 }
 
 func WebhookFlags(command *cobra.Command) {
-	var secretPath, tokenPath, home string
-	home = util.HomeDir()
-	if len(home) > 0 {
-		tokenPath = filepath.Join(home, ".github", "token")
-		secretPath = filepath.Join(home, ".github", "secret")
-	} else {
-		command.MarkFlagRequired("github-token")
-		command.MarkFlagRequired("webhook-secret")
-	}
-
-	command.Flags().StringVar(&gitHubTokenPathFlag, "github-token", tokenPath, "path to GitHub token file.")
-	command.Flags().StringVar(&gitWebHookSecretPathFlag, "webhook-secret", secretPath, "path to GitHub WebHook secret file.")
+	command.Flags().StringVar(&gitHubTokenPathFlag, "github-token", "/etc/tekctl/github/token", "path to GitHub token file.")
+	command.Flags().StringVar(&gitWebHookSecretPathFlag, "webhook-secret", "/etc/tekctl/github/secret", "path to GitHub WebHook secret file.")
 }
 
 var gitHubTokenPathFlag string

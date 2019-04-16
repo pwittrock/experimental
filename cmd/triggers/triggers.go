@@ -14,6 +14,7 @@ limitations under the License.
 package triggers
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,25 +22,24 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	// "os/exec"
-
 	"github.com/google/go-github/github"
 	"github.com/google/wire"
 	"github.com/spf13/cobra"
 	gitv4 "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	httpv4 "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 
 	"tektoncd.dev/experimental/pkg/cligithub"
+	"tektoncd.dev/experimental/pkg/clik8s"
 	"tektoncd.dev/experimental/pkg/wirecli"
 	"tektoncd.dev/experimental/pkg/wirecli/wiregithub"
-	// "github.com/cloudevents/sdk-go/pkg/cloudevents"
-	// "github.com/cloudevents/sdk-go/pkg/cloudevents/client"
 )
 
 var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
 var p *int32
-var refs *[]string
+var refs, orgs, repos *[]string
 
 func GetCommand() *cobra.Command {
 	c := &cobra.Command{
@@ -50,7 +50,9 @@ func GetCommand() *cobra.Command {
 	}
 	wiregithub.WebhookFlags(c)
 	p = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
-	refs = c.Flags().StringSlice("refs", []string{}, ".")
+	refs = c.Flags().StringSlice("ref", []string{}, "")
+	refs = c.Flags().StringSlice("org", []string{}, "")
+	refs = c.Flags().StringSlice("repo", []string{}, "")
 	return c
 }
 
@@ -169,14 +171,41 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 
 	runsPath := filepath.Join(tekPath, "runs")
 	if _, err := os.Stat(runsPath); err == nil {
-		fmt.Printf("creating runs...\n")
-		files, err := ioutil.ReadDir(runsPath)
+		configs, err := InitializeResourceConfigs(clik8s.ResourceConfigPath(runsPath))
 		if err != nil {
 			return err
 		}
-		for i := range files {
-			file := files[i]
-			fmt.Printf("cloned file: %s\n", file.Name())
+
+		var run []*unstructured.Unstructured
+		for i := range configs {
+			config := configs[i]
+			if v, found := config.GetAnnotations()["tekctl.tektoncd.dev/trigger"]; found {
+				if v == "push" {
+					fmt.Printf("running %s\n", config.GetGenerateName())
+					run = append(run, config)
+				}
+			}
+		}
+
+		for i := range run {
+			// create the run tasks
+			c := exec.Command("kubectl", "create", "-f", "-")
+			m, err := yaml.Marshal(run[i])
+			if err != nil {
+				return err
+			}
+			buf := &bytes.Buffer{}
+			_, err = buf.Write(m)
+			if err != nil {
+				return err
+			}
+			c.Stdin = buf
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			err = c.Run()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
