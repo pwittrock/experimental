@@ -39,6 +39,7 @@ import (
 
 var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
 var p *int32
+var path *string
 var refs, orgs, repos *[]string
 
 func GetCommand() *cobra.Command {
@@ -51,8 +52,9 @@ func GetCommand() *cobra.Command {
 	wiregithub.WebhookFlags(c)
 	p = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
 	refs = c.Flags().StringSlice("ref", []string{}, "")
-	refs = c.Flags().StringSlice("org", []string{}, "")
-	refs = c.Flags().StringSlice("repo", []string{}, "")
+	orgs = c.Flags().StringSlice("org", []string{}, "")
+	repos = c.Flags().StringSlice("repo", []string{}, "")
+	path = c.Flags().String("path", "tekton", "")
 	return c
 }
 
@@ -150,10 +152,10 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		fmt.Printf("cloned file: %s\n", file.Name())
 	}
 
-	tekPath := filepath.Join(loc, "tekton")
+	tekPath := filepath.Join(loc, *path)
 
 	if _, err := os.Stat(tekPath); os.IsNotExist(err) {
-		fmt.Printf("missing tekton directory\n")
+		fmt.Printf("missing [%s] directory\n", *path)
 		return nil
 	}
 
@@ -171,31 +173,6 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 
 	runsPath := filepath.Join(tekPath, "runs")
 	if _, err := os.Stat(runsPath); err == nil {
-		// files, err := ioutil.ReadDir(runsPath)
-		// if err != nil {
-		// 	return err
-		// }
-		//
-		// err = filepath.Walk(tekPath, func(path string, info os.FileInfo, err error) error {
-		// 	data, err := ioutil.ReadFile(path)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	objs := strings.Split(string(data), "---")
-		// 	for _, o := range objs {
-		// 		body := map[string]interface{}{}
-		// 		if err := yaml.Unmarshal([]byte(o), &body); err != nil {
-		// 			return err
-		// 		}
-		// 		configs = append(configs, &unstructured.Unstructured{Object: body})
-		// 	}
-		//
-		// 	return nil
-		// })
-		// if err != nil {
-		// 	return err
-		// }
-
 		t, err := template.ParseGlob(filepath.Join(runsPath, "*.yaml"))
 		if err != nil {
 			return err
