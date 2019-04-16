@@ -208,9 +208,12 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		if err != nil {
 			return err
 		}
+
+		fmt.Printf("found runs\n%s\n", buf.String())
 		objs := strings.Split(string(buf.String()), "---")
 		var configs []*unstructured.Unstructured
-		for _, o := range objs {
+		for i := range objs {
+			o := objs[i]
 			body := map[string]interface{}{}
 			if err := yaml.Unmarshal([]byte(o), &body); err != nil {
 				return err
@@ -221,6 +224,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		var run []*unstructured.Unstructured
 		for i := range configs {
 			config := configs[i]
+			fmt.Printf("found object %s\n", config.GetName())
 			if v, found := config.GetAnnotations()["tekctl.tektoncd.dev/trigger"]; found {
 				if v == "push" {
 					fmt.Printf("running %s\n", config.GetGenerateName())
@@ -230,8 +234,6 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		}
 
 		for i := range run {
-			run[i].SetGenerateName(run[i].GetName())
-			run[i].SetName("")
 			// create the run tasks
 			c := exec.Command("kubectl", "create", "-f", "-")
 			m, err := yaml.Marshal(run[i])
