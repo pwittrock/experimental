@@ -87,8 +87,9 @@ func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch event := event.(type) {
 	case *github.PushEvent:
 		err = s.DoPush(event)
-	case *github.Event
 	}
+
+	fmt.Printf("=====\n\n%+v\n=====\n\n", event)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -109,7 +110,6 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		}
 	}
 
-	fmt.Printf("=====\n%+v\n=====\n", event)
 	fmt.Printf("name: %s\n", event.Repo.GetFullName())
 
 	dir, err := ioutil.TempDir(os.TempDir(), "git-clone")
