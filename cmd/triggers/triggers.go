@@ -222,7 +222,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 	for i := range configs {
 		config := configs[i]
 		fmt.Printf("found object %s %s %v\n", config.GetName(), config.GetGenerateName(), config.GetAnnotations())
-		if v, found := config.GetAnnotations()["tekctl.tektoncd.dev/trigger"]; found {
+		if v, found := config.GetAnnotations()[triggerAnnotation]; found {
 			fmt.Printf("found annotation %s vs %s\n", v, trigger)
 			for _, p := range strings.Split(v, ",") {
 				if p == trigger {
@@ -236,6 +236,8 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 
 	return match, nil
 }
+
+const triggerAnnotation = "tekctl.tektoncd.dev/triggers"
 
 func (s *GitHubEventMonitor) DoKubectlAll(c string, objs []*unstructured.Unstructured) error {
 	for i := range objs {
