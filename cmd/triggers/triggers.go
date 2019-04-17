@@ -118,16 +118,17 @@ func (s *GitHubEventMonitor) DoPushEvent(event *github.PushEvent) error {
 
 func (s *GitHubEventMonitor) DoPushDir(event *github.PushEvent, path, op string) error {
 	if _, err := os.Stat(filepath.Join(path, op)); err != nil {
-		objs, err := s.GetResources(event, filepath.Join(path, op, "*.yaml"), "push")
-		if err != nil {
-			return err
-		}
-		err = s.DoKubectlAll(op, objs)
-		if err != nil {
-			return err
-		}
-	} else {
 		fmt.Printf("error doing %s: %v\n", op, err)
+		return nil
+	}
+
+	objs, err := s.GetResources(event, filepath.Join(path, op, "*.yaml"), "push")
+	if err != nil {
+		return err
+	}
+	err = s.DoKubectlAll(op, objs)
+	if err != nil {
+		return err
 	}
 	return nil
 }
