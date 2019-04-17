@@ -8,13 +8,21 @@ metadata:
 spec:
   inputs:
     resources:
-      - name: gitspace
-        resourceSpec:
-          type: git
-          params:
-            - name: revision
-              value: {{.Ref}}
-            - name: url
-              value: {{.URL}}
+    - name: gitspace
+      resourceSpec:
+        type: git
+        params:
+          - name: revision
+            value: {{.Ref}}
+          - name: url
+            value: {{.URL}}
+  outputs:
+    resources:
+    - name: builtImage
+      resourceSpec:
+        type: image
+        params:
+        - name: url
+          value: gcr.io/pwittrock-dev/tekctl
   taskRef:
-    name: dump-workspace-task
+    name: build-image-task
