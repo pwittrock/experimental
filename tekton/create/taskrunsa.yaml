@@ -52,8 +52,6 @@ spec:
         params:
         - name: url
           value: gcr.io/pwittrock-dev/tekctl:{{ .Tag }}
-  taskRef:
-    name: build-image
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
@@ -86,5 +84,3 @@ spec:
               value: {{ .Branch }}
             - name: url
               value: https://github.com/pwittrock/experimental
-  taskRef:
-    name: deploy-image
