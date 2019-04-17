@@ -39,7 +39,7 @@ import (
 
 var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
 var p *int32
-var path *string
+var path, strip *string
 var refs, orgs, repos *[]string
 
 func GetCommand() *cobra.Command {
@@ -55,6 +55,7 @@ func GetCommand() *cobra.Command {
 	orgs = c.Flags().StringSlice("org", []string{}, "")
 	repos = c.Flags().StringSlice("repo", []string{}, "")
 	path = c.Flags().String("path", "tekton", "")
+	strip = c.Flags().String("strip-tag-prefix", "release/", "")
 	return c
 }
 
@@ -118,7 +119,7 @@ func (s *GitHubEventMonitor) DoPushEvent(event *github.PushEvent) error {
 
 func (s *GitHubEventMonitor) DoPushDir(event *github.PushEvent, path, op string) error {
 	if _, err := os.Stat(filepath.Join(path, op)); err != nil {
-		fmt.Printf("error doing %s: %v\n", op, err)
+		fmt.Printf("skipping %s\n", op)
 		return nil
 	}
 
@@ -176,10 +177,13 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 	r := event.GetRef()
 	if strings.HasPrefix(r, "refs/heads/") {
 		rtype = "branch"
-		rval = strings.Replace(r, "refs/heads/", "", -1)
+		rval = strings.TrimPrefix(r, "refs/heads/")
 	} else if strings.HasPrefix(r, "refs/tags/") {
 		rtype = "tag"
-		rval = strings.Replace(r, "refs/tags/", "", -1)
+		rval = strings.TrimPrefix(r, "refs/tags/")
+		if strings.HasPrefix(rval, *strip) {
+			rval = strings.TrimPrefix(rval, *strip)
+		}
 	}
 
 	t, err := template.ParseGlob(path)

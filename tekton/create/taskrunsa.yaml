@@ -6,8 +6,34 @@ metadata:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/base-ref: "refs/heads/tekctl"
     tekctl.tektoncd.dev/push-types: "tag"
-    tekctl.tektoncd.dev/tag-prefix: "release/"
 spec:
+  taskSpec:
+    inputs:
+      params:
+        - name: pathToDockerFile
+          description: The path to the dockerfile to build
+          default: /workspace/gitspace/Dockerfile
+        - name: pathToContext
+          description:
+            The build context used by Kaniko
+            (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
+          default: /workspace/gitspace/
+      resources:
+        - name: gitspace
+          type: git
+    outputs:
+      resources:
+        - name: builtImage
+          type: image
+    steps:
+      - name: build-and-push
+        image: gcr.io/kaniko-project/executor
+        command:
+          - /kaniko/executor
+        args:
+          - --dockerfile=${inputs.params.pathToDockerFile}
+          - --destination=${outputs.resources.builtImage.url}
+          - --context=${inputs.params.pathToContext}
   inputs:
     resources:
     - name: gitspace
@@ -15,7 +41,7 @@ spec:
         type: git
         params:
           - name: revision
-            value: {{ .Tag }}
+            value: "{{ .Tag }}"
           - name: url
             value: https://github.com/pwittrock/experimental
   outputs:
@@ -38,6 +64,18 @@ metadata:
     tekctl.tektoncd.dev/push-types: "branch"
     tekctl.tektoncd.dev/push-branches: "tekctl"
 spec:
+  taskSpec:
+    inputs:
+      resources:
+        - name: gitspace
+          type: git
+    steps:
+      - name: echo
+        image: ubuntu
+        command:
+          - echo
+        args:
+          - "hello world"
   inputs:
     resources:
       - name: gitspace
