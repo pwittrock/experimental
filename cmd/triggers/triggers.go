@@ -75,7 +75,7 @@ type GitHubEventMonitor struct {
 func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	payload, err := github.ValidatePayload(r, []byte(s.Secret))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error validating webhook payload: %v\n", err)
+		fmt.Printf("error validating request: %v\n%+v\n", err, r)
 		return
 	}
 	event, err := github.ParseWebHook(github.WebHookType(r), payload)
@@ -97,7 +97,10 @@ func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *GitHubEventMonitor) DoPushEvent(event *github.PushEvent) error {
-	path, err := s.DoPushClone(event)
+	path, clean, err := s.DoPushClone(event)
+	if clean != nil {
+		defer clean()
+	}
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,7 @@ func (s *GitHubEventMonitor) DoPushDir(event *github.PushEvent, path, op string)
 	return nil
 }
 
-func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, error) {
+func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(), error) {
 	ref := event.GetRef()
 	if len(event.GetBaseRef()) > 0 {
 		ref = event.GetBaseRef()
@@ -169,13 +172,13 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, error
 
 	dir, err := ioutil.TempDir(os.TempDir(), "git-clone")
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	defer os.RemoveAll(dir) // clean up
+	clean := func() { os.RemoveAll(dir) } // clean up
 
 	err = os.Chdir(dir)
 	if err != nil {
-		return "", err
+		return "", clean, err
 	}
 
 	r := fmt.Sprintf("https://github.com/%s.git", event.GetRepo().GetFullName())
@@ -192,7 +195,7 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, error
 		},
 	})
 	if err != nil {
-		return "", err
+		return "", clean, err
 	}
 
 	fmt.Printf("cloned %s into %s\n", r, loc)
@@ -200,13 +203,13 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, error
 	fmt.Printf("reading files...\n")
 	files, err := ioutil.ReadDir(loc)
 	if err != nil {
-		return "", err
+		return "", clean, err
 	}
 	for i := range files {
 		file := files[i]
 		fmt.Printf("cloned file: %s\n", file.Name())
 	}
-	return filepath.Join(loc, *path), nil
+	return filepath.Join(loc, *path), clean, nil
 }
 
 func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger string) ([]*unstructured.Unstructured, error) {
