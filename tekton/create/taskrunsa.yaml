@@ -41,7 +41,7 @@ spec:
         type: git
         params:
           - name: revision
-            value: "{{ .Tag }}"
+            value: "{{ .Ref }}"
           - name: url
             value: https://github.com/pwittrock/experimental
   outputs:
