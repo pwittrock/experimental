@@ -11,4 +11,4 @@ spec:
   - name: dump-workspace
     image: ubuntu
     command: ["ls"]
-    args: ["/workspace/gitspace/tekton/*"]
+    args: ["/workspace/gitspace/tekton/apply"]
