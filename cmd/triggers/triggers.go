@@ -101,9 +101,42 @@ func (s *GitHubEventMonitor) DoPushEvent(event *github.PushEvent) error {
 	if err != nil {
 		return err
 	}
-	// if err := s.DoPushDir(event, path, "apply"); err != nil {
-	// 	return err
-	// }
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+	for i := range files {
+		fmt.Printf("found %s\n", files[i].Name())
+	}
+
+	files, err = ioutil.ReadDir(filepath.Join(path, "tekton"))
+	if err != nil {
+		return err
+	}
+	for i := range files {
+		fmt.Printf("found tekton %s\n", files[i].Name())
+	}
+
+	files, err = ioutil.ReadDir(filepath.Join(path, "tekton", "apply"))
+	if err != nil {
+		return err
+	}
+	for i := range files {
+		fmt.Printf("found tekton %s\n", files[i].Name())
+	}
+
+	files, err = ioutil.ReadDir(filepath.Join(path, "tekton", "create"))
+	if err != nil {
+		return err
+	}
+	for i := range files {
+		fmt.Printf("found tekton %s\n", files[i].Name())
+	}
+
+	if err := s.DoPushDir(event, path, "apply"); err != nil {
+		return err
+	}
 	if err := s.DoPushDir(event, path, "create"); err != nil {
 		return err
 	}
