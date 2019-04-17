@@ -101,9 +101,9 @@ func (s *GitHubEventMonitor) DoPushEvent(event *github.PushEvent) error {
 	if err != nil {
 		return err
 	}
-	if err := s.DoPushDir(event, path, "apply"); err != nil {
-		return err
-	}
+	// if err := s.DoPushDir(event, path, "apply"); err != nil {
+	// 	return err
+	// }
 	if err := s.DoPushDir(event, path, "create"); err != nil {
 		return err
 	}
