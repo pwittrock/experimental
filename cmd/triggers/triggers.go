@@ -98,13 +98,25 @@ func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
+	var doRef string
+
 	if len(*refs) > 0 {
 		found := false
 		for _, ref := range *refs {
-			if ref == *event.Ref {
+			if ref == event.GetRef() {
 				found = true
+				doRef = event.GetRef()
+				break
 			}
 		}
+		for _, ref := range *refs {
+			if ref == event.GetBaseRef() {
+				doRef = event.GetBaseRef()
+				found = true
+				break
+			}
+		}
+
 		if !found {
 			return nil
 		}
@@ -131,7 +143,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		URL:           r,
 		Progress:      os.Stdout,
 		Depth:         1,
-		ReferenceName: plumbing.ReferenceName(event.GetRef()),
+		ReferenceName: plumbing.ReferenceName(doRef),
 		Auth: &httpv4.BasicAuth{
 			Username: "", // anything except an empty string
 			Password: string(s.Secret),
@@ -181,7 +193,7 @@ func (s *GitHubEventMonitor) DoPush(event *github.PushEvent) error {
 		buf := &bytes.Buffer{}
 		for _, tmpl := range t.Templates() {
 			err = tmpl.Execute(buf, Data{
-				Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
+				Ref: strings.Replace(doRef, "refs/", "", -1),
 				URL: r,
 			})
 			if err != nil {
