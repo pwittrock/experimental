@@ -221,7 +221,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 
 	for i := range configs {
 		config := configs[i]
-		fmt.Printf("found object %s %s\n", config.GetName(), config.GetGenerateName())
+		fmt.Printf("found object %s %s %v\n", config.GetName(), config.GetGenerateName(), config.GetAnnotations())
 		if v, found := config.GetAnnotations()["tekctl.tektoncd.dev/trigger"]; found {
 			fmt.Printf("found annotation %s vs %s\n", v, trigger)
 			for _, p := range strings.Split(v, ",") {
