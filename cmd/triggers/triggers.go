@@ -101,26 +101,30 @@ func (s *GitHubEventMonitor) DoPushEvent(event *github.PushEvent) error {
 	if err != nil {
 		return err
 	}
-
-	objs, err := s.GetResources(event, filepath.Join(path, "apply"), "push")
-	if err != nil {
+	if err := s.DoPushDir(event, path, "apply"); err != nil {
 		return err
 	}
-	err = s.DoKubectlAll("apply", objs)
-	if err != nil {
-		return err
-	}
-
-	objs, err = s.GetResources(event, filepath.Join(path, "create"), "push")
-	if err != nil {
-		return err
-	}
-	err = s.DoKubectlAll("create", objs)
-	if err != nil {
+	if err := s.DoPushDir(event, path, "create"); err != nil {
 		return err
 	}
 
 	fmt.Printf("done\n")
+	return nil
+}
+
+func (s *GitHubEventMonitor) DoPushDir(event *github.PushEvent, path, op string) error {
+	if _, err := os.Stat(filepath.Join(path, op)); err != nil {
+		objs, err := s.GetResources(event, filepath.Join(path, op, "*.yaml"), "push")
+		if err != nil {
+			return err
+		}
+		err = s.DoKubectlAll(op, objs)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("error doing %s: %v\n", op, err)
+	}
 	return nil
 }
 
@@ -143,7 +147,6 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, error
 
 	r := fmt.Sprintf("https://github.com/%s.git", event.GetRepo().GetFullName())
 	loc := filepath.Join(dir, event.GetRepo().GetName())
-	fmt.Printf("cloning repository %s into %s\n", r, loc)
 
 	_, err = gitv4.PlainClone(loc, false, &gitv4.CloneOptions{
 		URL:           r,
@@ -159,7 +162,7 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, error
 		return "", err
 	}
 
-	fmt.Printf("cloned %s\n", r)
+	fmt.Printf("cloned %s into %s\n", r, loc)
 
 	fmt.Printf("reading files...\n")
 	files, err := ioutil.ReadDir(loc)
@@ -179,7 +182,8 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 		ref = event.GetBaseRef()
 	}
 
-	t, err := template.ParseGlob(filepath.Join(path, "*.yaml"))
+	fmt.Printf("parsing template %s\n", path)
+	t, err := template.ParseGlob(path)
 	if err != nil {
 		return nil, err
 	}
