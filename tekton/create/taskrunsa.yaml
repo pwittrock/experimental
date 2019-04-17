@@ -4,7 +4,7 @@ kind: TaskRun
 metadata:
   generateName: test-git-branch-a-
   annotations:
-    tekctl.tektoncd.dev/events: "push"
+    tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/push-types: "tag"
     tekctl.tektoncd.dev/push-tag-prefix: "release/"
 spec:

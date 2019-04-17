@@ -2,6 +2,10 @@ apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   name: build-image-task
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/push-types: "tag"
+    tekctl.tektoncd.dev/push-tag-prefix: "release/"
 spec:
   inputs:
     params:
