@@ -1,11 +1,11 @@
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
-  name: build-image-task
+  name: build-image
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
-    tekctl.tektoncd.dev/push-types: "tag,branch"
-    tekctl.tektoncd.dev/push-tag-prefix: "release/"
+    tekctl.tektoncd.dev/push-types: "branch"
+    tekctl.tektoncd.dev/push-branch: "tekctl"
 spec:
   inputs:
     params:
@@ -33,3 +33,24 @@ spec:
       - --dockerfile=${inputs.params.pathToDockerFile}
       - --destination=${outputs.resources.builtImage.url}
       - --context=${inputs.params.pathToContext}
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: deploy-image
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/push-types: "branch"
+    tekctl.tektoncd.dev/push-branch: "tekctl"
+spec:
+  inputs:
+    resources:
+      - name: gitspace
+        type: git
+  steps:
+    - name: echo
+      image: ubuntu
+      command:
+        - echo
+      args:
+        - "hello world"

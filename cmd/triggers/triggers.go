@@ -122,7 +122,7 @@ func (s *GitHubEventMonitor) DoPushDir(event *github.PushEvent, path, op string)
 		return nil
 	}
 
-	objs, err := s.GetResources(event, filepath.Join(path, op, "*.yaml"), "push")
+	objs, err := s.GetResources(event, filepath.Join(path, op, "*.yaml"))
 	if err != nil {
 		return err
 	}
@@ -168,35 +168,33 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 	}
 
 	fmt.Printf("cloned %s into %s\n", r, loc)
-
-	fmt.Printf("reading files...\n")
-	files, err := ioutil.ReadDir(loc)
-	if err != nil {
-		return "", clean, err
-	}
-	for i := range files {
-		file := files[i]
-		fmt.Printf("cloned file: %s\n", file.Name())
-	}
 	return filepath.Join(loc, *path), clean, nil
 }
 
-func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger string) ([]*unstructured.Unstructured, error) {
-	ref := event.GetRef()
-	if len(event.GetBaseRef()) > 0 {
-		ref = event.GetBaseRef()
+func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) ([]*unstructured.Unstructured, error) {
+	var rtype, rval string
+	r := event.GetRef()
+	if strings.HasPrefix(r, "refs/heads/") {
+		rtype = "branch"
+		rval = strings.Replace(r, "refs/heads/", "", -1)
+	} else if strings.HasPrefix(r, "refs/tags/") {
+		rtype = "tag"
+		rval = strings.Replace(r, "refs/tags/", "", -1)
 	}
 
-	fmt.Printf("parsing template %s\n", path)
 	t, err := template.ParseGlob(path)
 	if err != nil {
 		return nil, err
 	}
 	buf := &bytes.Buffer{}
+
 	for _, tmpl := range t.Templates() {
+
 		err = tmpl.Execute(buf, Data{
-			Ref: strings.Replace(ref, "refs/", "", -1),
-			URL: fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
+			Ref:    strings.Replace(event.GetRef(), "refs/", "", -1),
+			URL:    fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
+			Tag:    rval,
+			Branch: rval,
 		})
 		if err != nil {
 			return nil, err
@@ -204,7 +202,6 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 		buf.WriteString("\n---\n")
 	}
 
-	fmt.Printf("found %s template:\n%s\n", trigger, buf.String())
 	objs := strings.Split(string(buf.String()), "---")
 	var configs, match []*unstructured.Unstructured
 	for i := range objs {
@@ -220,28 +217,40 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 	}
 
 	for i := range configs {
-		config := configs[i]
-		fmt.Printf("found object %s %s %v\n", config.GetName(), config.GetGenerateName(), config.GetAnnotations())
-		if v, found := config.GetAnnotations()[triggerAnnotation]; found {
-			fmt.Printf("found annotation %s vs %s\n", v, trigger)
-			for _, p := range strings.Split(v, ",") {
-				if p == trigger {
-					fmt.Printf("match\n")
-					match = append(match, config)
-					break
-				}
-			}
+		if !s.Check(configs[i], triggerAnnotation, "push", false) {
+			continue
 		}
+		if !s.Check(configs[i], pushTypesAnnotation, rtype, true) {
+			continue
+		}
+		if !s.Check(configs[i], pushBranchesAnnotation, rval, true) {
+			continue
+		}
+		match = append(match, configs[i])
 	}
 
 	return match, nil
 }
 
+func (s *GitHubEventMonitor) Check(obj *unstructured.Unstructured, annotation, value string, d bool) bool {
+	fi := d
+	if v, found := obj.GetAnnotations()[annotation]; found {
+		fi = false
+		for _, p := range strings.Split(v, ",") {
+			if p == value {
+				fi = true
+			}
+		}
+	}
+	return fi
+}
+
 const triggerAnnotation = "tekctl.tektoncd.dev/triggers"
+const pushTypesAnnotation = "tekctl.tektoncd.dev/push-types"
+const pushBranchesAnnotation = "tekctl.tektoncd.dev/push-branches"
 
 func (s *GitHubEventMonitor) DoKubectlAll(c string, objs []*unstructured.Unstructured) error {
 	for i := range objs {
-		fmt.Printf("doing %s%s\n", objs[i].GetName(), objs[i].GetGenerateName())
 		err := s.DoKubectl(c, objs[i])
 		if err != nil {
 			return err
@@ -269,7 +278,6 @@ func (s *GitHubEventMonitor) DoKubectl(c string, obj *unstructured.Unstructured)
 		return err
 	}
 
-	fmt.Printf("kubectl %s: %+v\n", c, obj)
 	cmd := exec.Command("kubectl", c, "--filename", "-")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
@@ -278,6 +286,8 @@ func (s *GitHubEventMonitor) DoKubectl(c string, obj *unstructured.Unstructured)
 }
 
 type Data struct {
-	Ref string
-	URL string
+	Ref    string
+	URL    string
+	Tag    string
+	Branch string
 }

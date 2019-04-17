@@ -1,12 +1,10 @@
----
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
 metadata:
-  generateName: test-git-branch-a-
+  generateName: build-image-
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/push-types: "tag"
-    tekctl.tektoncd.dev/push-tag-prefix: "release/"
 spec:
   inputs:
     resources:
@@ -15,9 +13,9 @@ spec:
         type: git
         params:
           - name: revision
-            value: {{.Ref}}
+            value: {{ .Tag }}
           - name: url
-            value: {{.URL}}
+            value: https://github.com/pwittrock/tekctl
   outputs:
     resources:
     - name: builtImage
@@ -25,6 +23,27 @@ spec:
         type: image
         params:
         - name: url
-          value: gcr.io/pwittrock-dev/tekctl
+          value: gcr.io/pwittrock-dev/tekctl:{{ .Tag }}
   taskRef:
-    name: build-image-task
+    name: build-image
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: deploy-image-
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/push-types: "branch"
+spec:
+  inputs:
+    resources:
+      - name: gitspace
+        resourceSpec:
+          type: git
+          params:
+            - name: revision
+              value: {{ .Branch }}
+            - name: url
+              value: https://github.com/pwittrock/tekctl
+  taskRef:
+    name: deploy-image
