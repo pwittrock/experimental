@@ -12,3 +12,11 @@ spec:
     image: ubuntu
     command: ["ls"]
     args: ["/workspace/gitspace/tekton/apply"]
+  - name: build-and-push
+    image: gcr.io/kaniko-project/executor
+    command:
+      - /kaniko/executor
+    args:
+      - --dockerfile=/workspace/gitspace/Dockerfile
+      - --destination=gcr.io/pwittrock-dev/tekctl
+      - --context=/workspace/gitspace/
