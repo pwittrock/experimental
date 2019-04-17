@@ -60,7 +60,6 @@ metadata:
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/push-types: "branch"
-    tekctl.tektoncd.dev/push-branches: "tekctl"
 spec:
   taskSpec:
     inputs:
