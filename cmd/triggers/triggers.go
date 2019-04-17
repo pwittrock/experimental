@@ -204,7 +204,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 		buf.WriteString("\n---\n")
 	}
 
-	fmt.Printf("found runs\n%s\n", buf.String())
+	fmt.Printf("found %s template:\n%s\n", trigger, buf.String())
 	objs := strings.Split(string(buf.String()), "---")
 	var configs, match []*unstructured.Unstructured
 	for i := range objs {
@@ -237,6 +237,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path, trigger
 
 func (s *GitHubEventMonitor) DoKubectlAll(c string, objs []*unstructured.Unstructured) error {
 	for i := range objs {
+		fmt.Printf("doing %s%s\n", objs[i].GetName(), objs[i].GetGenerateName())
 		err := s.DoKubectl(c, objs[i])
 		if err != nil {
 			return err
@@ -263,6 +264,8 @@ func (s *GitHubEventMonitor) DoKubectl(c string, obj *unstructured.Unstructured)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("kubectl %s: %+v\n", c, obj)
 	cmd := exec.Command("kubectl", c, "--filename", "-")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
