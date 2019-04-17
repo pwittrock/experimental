@@ -4,7 +4,9 @@ metadata:
   generateName: build-image-
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/base-ref: "refs/heads/tekctl"
     tekctl.tektoncd.dev/push-types: "tag"
+    tekctl.tektoncd.dev/tag-prefix: "release/"
 spec:
   inputs:
     resources:
@@ -15,7 +17,7 @@ spec:
           - name: revision
             value: {{ .Tag }}
           - name: url
-            value: https://github.com/pwittrock/tekctl
+            value: https://github.com/pwittrock/experimental
   outputs:
     resources:
     - name: builtImage
@@ -34,6 +36,7 @@ metadata:
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/push-types: "branch"
+    tekctl.tektoncd.dev/push-branches: "tekctl"
 spec:
   inputs:
     resources:
@@ -44,6 +47,6 @@ spec:
             - name: revision
               value: {{ .Branch }}
             - name: url
-              value: https://github.com/pwittrock/tekctl
+              value: https://github.com/pwittrock/experimental
   taskRef:
     name: deploy-image

@@ -226,6 +226,9 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 		if !s.Check(configs[i], pushBranchesAnnotation, rval, true) {
 			continue
 		}
+		if !s.Check(configs[i], baseRefAnnotation, event.GetBaseRef(), true) {
+			continue
+		}
 		match = append(match, configs[i])
 	}
 
@@ -248,6 +251,7 @@ func (s *GitHubEventMonitor) Check(obj *unstructured.Unstructured, annotation, v
 const triggerAnnotation = "tekctl.tektoncd.dev/triggers"
 const pushTypesAnnotation = "tekctl.tektoncd.dev/push-types"
 const pushBranchesAnnotation = "tekctl.tektoncd.dev/push-branches"
+const baseRefAnnotation = "tekctl.tektoncd.dev/base-ref"
 
 func (s *GitHubEventMonitor) DoKubectlAll(c string, objs []*unstructured.Unstructured) error {
 	for i := range objs {

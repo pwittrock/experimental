@@ -5,7 +5,7 @@ metadata:
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/push-types: "branch"
-    tekctl.tektoncd.dev/push-branch: "tekctl"
+    tekctl.tektoncd.dev/push-branches: "tekctl"
 spec:
   inputs:
     params:
@@ -41,7 +41,7 @@ metadata:
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/push-types: "branch"
-    tekctl.tektoncd.dev/push-branch: "tekctl"
+    tekctl.tektoncd.dev/push-branches: "tekctl"
 spec:
   inputs:
     resources:
