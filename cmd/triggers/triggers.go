@@ -147,20 +147,22 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 		return "", clean, err
 	}
 
-	repoName := *tektonRepo
+	repoName := strings.TrimSpace(*tektonRepo)
 	if len(repoName) == 0 {
 		repoName = event.GetRepo().GetName()
 	}
 
-	orgName := *tektonOrg
+	orgName := strings.TrimSpace(*tektonOrg)
 	if len(orgName) == 0 {
 		orgName = event.GetRepo().GetOrganization()
 	}
 
-	loc := filepath.Join(dir, event.GetRepo().GetName())
+	destDir := filepath.Join(dir, event.GetRepo().GetName())
 
-	_, err = gitv4.PlainClone(loc, false, &gitv4.CloneOptions{
-		URL:           fmt.Sprintf("https://github.com/%s/%s.git", repoName, orgName),
+	url := fmt.Sprintf("https://github.com/%s/%s.git", orgName, repoName)
+	fmt.Printf("cloning %s into %s\n", url, destDir)
+	_, err = gitv4.PlainClone(destDir, false, &gitv4.CloneOptions{
+		URL:           url,
 		Progress:      os.Stdout,
 		Depth:         1,
 		ReferenceName: plumbing.NewBranchReferenceName(*tektonBranch),
@@ -173,8 +175,7 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 		return "", clean, err
 	}
 
-	fmt.Printf("cloned %s into %s\n", fmt.Sprintf("https://github.com/%s/%s.git", repoName, orgName), loc)
-	return filepath.Join(loc, *path), clean, nil
+	return filepath.Join(destDir, *path), clean, nil
 }
 
 func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) ([]*unstructured.Unstructured, error) {
