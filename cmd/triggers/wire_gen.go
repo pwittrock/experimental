@@ -6,15 +6,36 @@
 package triggers
 
 import (
+	"tektoncd.dev/experimental/pkg/clik8s"
 	"tektoncd.dev/experimental/pkg/wirecli/wiregithub"
+	"tektoncd.dev/experimental/pkg/wirecli/wirek8s"
 )
 
 // Injectors from wire.go:
 
 func InitializeTrigger() (*GitHubEventMonitor, error) {
-	gitHubWebHookSecret := wiregithub.NewGitHubWebHookSecret()
+	gitHubWebHookSecretPath := wiregithub.NewGitHubWebHookSecretPath()
+	gitHubWebHookSecret, err := wiregithub.NewGitHubWebHookSecret(gitHubWebHookSecretPath)
+	if err != nil {
+		return nil, err
+	}
+	gitHubTokenPath := wiregithub.NewGitHubTokenPath()
+	gitHubToken, err := wiregithub.NewGitHubToken(gitHubTokenPath)
+	if err != nil {
+		return nil, err
+	}
 	gitHubEventMonitor := &GitHubEventMonitor{
 		Secret: gitHubWebHookSecret,
+		Token:  gitHubToken,
 	}
 	return gitHubEventMonitor, nil
+}
+
+func InitializeResourceConfigs(resourceConfigPath clik8s.ResourceConfigPath) (clik8s.ResourceConfigs, error) {
+	fileSystem := wirek8s.NewFileSystem()
+	resourceConfigs, err := wirek8s.NewResourceConfig(resourceConfigPath, fileSystem)
+	if err != nil {
+		return nil, err
+	}
+	return resourceConfigs, nil
 }

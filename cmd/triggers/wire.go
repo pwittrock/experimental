@@ -16,8 +16,14 @@ package triggers
 
 import (
 	"github.com/google/wire"
+
+	"tektoncd.dev/experimental/pkg/clik8s"
 )
 
 func InitializeTrigger() (*GitHubEventMonitor, error) {
+	panic(wire.Build(ProviderSet))
+}
+
+func InitializeResourceConfigs(clik8s.ResourceConfigPath) (clik8s.ResourceConfigs, error) {
 	panic(wire.Build(ProviderSet))
 }

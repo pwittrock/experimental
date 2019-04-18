@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonLabels:
+  app.kubernetes.io/name: tekctl-webhook
+
+resources:
+  - webhook.yaml
+
+secretGenerator:
+  - name: github
+    files:
+      - "token"
+      - "secret"
+
+images:
+  - name: tekctl
+    newTag: "56"
+    newName: gcr.io/pwittrock-dev/tekctl

@@ -19,11 +19,11 @@ import (
 
 	"github.com/google/wire"
 	"github.com/spf13/cobra"
+
 	"tektoncd.dev/experimental/pkg/clik8s"
 	"tektoncd.dev/experimental/pkg/scm/issue"
 	"tektoncd.dev/experimental/pkg/wirecli"
 	"tektoncd.dev/experimental/pkg/wirecli/wiregithub"
-	"tektoncd.dev/experimental/pkg/wirecli/wirek8s"
 )
 
 // ProviderSet captures the dependencies for this command.
@@ -61,6 +61,5 @@ tekctl scm update-issue --repo pwittrock/najena path/to/kustomization
 
 	issue.Flags(updateIssueCmd)
 	wiregithub.Flags(updateIssueCmd)
-	wirek8s.Flags(updateIssueCmd)
 	return updateIssueCmd
 }
