@@ -1,6 +1,7 @@
 # go build binaries
 main
 experimental
+tekctl
 
 # intellij
 .idea/

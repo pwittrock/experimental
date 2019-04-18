@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekctl-webhook
+spec:
+  replicas: 1
+  selector: {}
+  template:
+    metadata: {}
+    spec:
+      serviceAccountName: tekctl
+      automountServiceAccountToken: true
+      containers:
+        - name: tekctl
+          image: tekctl
+          args:
+            - events
+            - "--ref=refs/heads/tekctl"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /etc/tekctl/github
+              name: github-secret
+      volumes:
+        - secret:
+            secretName: github
+          name: github-secret
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: tekctl-webhook
+spec:
+  selector: {}
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

@@ -33,6 +33,7 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2 // indirect
+	github.com/src-d/go-git v4.7.0+incompatible
 	github.com/stretchr/testify v1.2.2
 	go.opencensus.io v0.19.2 // indirect
 	golang.org/x/net v0.0.0-20190328230028-74de082e2cca // indirect

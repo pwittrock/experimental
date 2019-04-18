@@ -42,14 +42,13 @@ func InitializeUpdater(resourceConfigPath clik8s.ResourceConfigPath) (*issue.Upd
 	if err != nil {
 		return nil, err
 	}
-	gitHubTokenPath := wiregithub.NewGitHubTokenPathFlag()
-	client, err := wiregithub.NewGitHubClient(gitHubTokenPath)
+	gitHubTokenPath := wiregithub.NewGitHubTokenPath()
+	gitHubToken, err := wiregithub.NewGitHubToken(gitHubTokenPath)
 	if err != nil {
 		return nil, err
 	}
-	masterURL := wirek8s.NewMasterFlag()
-	kubeConfigPath := wirek8s.NewKubeConfigPathFlag()
-	config, err := wirek8s.NewRestConfig(masterURL, kubeConfigPath)
+	client := wiregithub.NewGitHubClient(gitHubToken)
+	config, err := wirek8s.NewRestConfig()
 	if err != nil {
 		return nil, err
 	}
