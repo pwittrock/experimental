@@ -3,9 +3,6 @@ kind: Kustomization
 
 namespace: default
 
-commonLabels:
-  app.kubernetes.io/environment: "prod"
-
 resources:
   - namespace.yaml
 
