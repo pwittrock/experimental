@@ -4,6 +4,7 @@ metadata:
   generateName: build-image-
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
+    # Build images on tagged releases
     tekctl.tektoncd.dev/match: "refs/tags/release/"
 spec:
   taskSpec:

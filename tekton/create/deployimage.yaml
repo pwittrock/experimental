@@ -4,6 +4,7 @@ metadata:
   generateName: deploy-image-
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
+    # Push dev environment
     tekctl.tektoncd.dev/match: "refs/heads/deploy-dev"
 spec:
   taskSpec:
