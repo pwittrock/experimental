@@ -76,7 +76,6 @@ type GitHubEventMonitor struct {
 func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	payload, err := github.ValidatePayload(r, []byte(s.Secret))
 	if err != nil {
-		fmt.Printf("error validating request: %v\n%+v\n", err, r)
 		return
 	}
 	event, err := github.ParseWebHook(github.WebHookType(r), payload)
@@ -198,7 +197,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 
 	for _, tmpl := range t.Templates() {
 		err = tmpl.Execute(buf, Data{
-			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
+			Ref: event.GetRef(),
 			URL: fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
 		})
 		if err != nil {
