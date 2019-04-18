@@ -198,7 +198,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 
 	for _, tmpl := range t.Templates() {
 		err = tmpl.Execute(buf, Data{
-			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
+			Ref: event.GetRef(),
 			URL: fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
 		})
 		if err != nil {
