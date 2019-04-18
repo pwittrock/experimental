@@ -40,7 +40,7 @@ import (
 var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
 
 var port *int32
-var path, tektonBranch, tektonRepo, tektonOrg *string
+var path, tektonBranch, tektonRepo *string
 var triggerRefWhitelist *[]string
 
 func GetCommand() *cobra.Command {
@@ -54,8 +54,7 @@ func GetCommand() *cobra.Command {
 	port = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
 	triggerRefWhitelist = c.Flags().StringSlice("refs", []string{"refs/heads/", "refs/tags/"}, "if not empty, white list triggers to these ref prefixes")
 	tektonBranch = c.Flags().String("tekton-branch", "tekton", "if not empty, use this branch for the Tekton config.")
-	tektonRepo = c.Flags().String("tekton-repo", "", "if not empty, use this repo for the Tekton config.")
-	tektonOrg = c.Flags().String("tekton-org", "", "if not empty, use this org for the Tekton config.")
+	tektonRepo = c.Flags().String("tekton-repo", "", "if not empty, use this repo for the Tekton config.  e.g. tektoncd/experimental")
 	path = c.Flags().String("path", "tekton", "look for Tekton configs in this directory")
 	return c
 }
@@ -149,17 +148,12 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 
 	repoName := strings.TrimSpace(*tektonRepo)
 	if len(repoName) == 0 {
-		repoName = event.GetRepo().GetName()
-	}
-
-	orgName := strings.TrimSpace(*tektonOrg)
-	if len(orgName) == 0 {
-		orgName = event.GetRepo().GetOrganization()
+		repoName = event.GetRepo().GetFullName()
 	}
 
 	destDir := filepath.Join(dir, event.GetRepo().GetName())
 
-	url := fmt.Sprintf("https://github.com/%s/%s.git", orgName, repoName)
+	url := fmt.Sprintf("https://github.com/%s.git", repoName)
 	fmt.Printf("cloning %s into %s\n", url, destDir)
 	_, err = gitv4.PlainClone(destDir, false, &gitv4.CloneOptions{
 		URL:           url,
