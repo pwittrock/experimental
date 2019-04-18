@@ -29,26 +29,13 @@ spec:
         args:
           - "/workspace/gssecrets/token"
           - "/workspace/gitspace/config/token"
-      - name: echo-gs
-        image: ubuntu
-        command:
-          - ls
-        args:
-          - "/workspace/gssecrets"
-      - name: kustomize
-        image: gcr.io/pwittrock-dev/kubectl
-        command:
-          - kubectl
-        args:
-          - "kustomize"
-          - "/workspace/gitspace/config"
       - name: apply
         image: gcr.io/pwittrock-dev/kubectl
         command:
           - kubectl
         args:
           - "apply"
-          - "-k=/workspace/gitspace/config/dev/us-west"
+          - "-k=/workspace/gitspace/config/deploy-dev/us-west"
   inputs:
     resources:
       - name: gitspace
