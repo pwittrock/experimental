@@ -13,9 +13,10 @@ spec:
       containers:
         - name: tekctl
           image: tekctl
+          command:
+            - tekctl
           args:
             - events
-            - "--ref=refs/heads/tekctl"
           ports:
             - containerPort: 8080
           volumeMounts:

@@ -51,9 +51,6 @@ func GetCommand() *cobra.Command {
 	}
 	wiregithub.WebhookFlags(c)
 	p = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
-	refs = c.Flags().StringSlice("ref", []string{}, "")
-	orgs = c.Flags().StringSlice("org", []string{}, "")
-	repos = c.Flags().StringSlice("repo", []string{}, "")
 	path = c.Flags().String("path", "tekton", "")
 	strip = c.Flags().String("strip-tag-prefix", "release/", "")
 	return c
