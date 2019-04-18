@@ -185,23 +185,18 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 		return nil, nil
 	}
 
-	t, err := template.ParseGlob(path)
-	if err != nil {
-		return nil, err
-	}
-	t = t.Funcs(template.FuncMap{
+	t := template.New("configs").Funcs(template.FuncMap{
 		"TrimPrefix": strings.TrimPrefix,
 		"TrimSuffix": strings.TrimSuffix,
 		"TrimSpace":  strings.TrimSpace,
 	})
+	t, err := t.ParseGlob(path)
+	if err != nil {
+		return nil, err
+	}
 	buf := &bytes.Buffer{}
 
 	for _, tmpl := range t.Templates() {
-		tmpl = tmpl.Funcs(template.FuncMap{
-			"TrimPrefix": strings.TrimPrefix,
-			"TrimSuffix": strings.TrimSuffix,
-			"TrimSpace":  strings.TrimSpace,
-		})
 		err = tmpl.Execute(buf, Data{
 			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
 			URL: fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
