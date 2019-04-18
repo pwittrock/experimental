@@ -76,7 +76,6 @@ type GitHubEventMonitor struct {
 func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	payload, err := github.ValidatePayload(r, []byte(s.Secret))
 	if err != nil {
-		fmt.Printf("error validating request: %v\n%+v\n", err, r)
 		return
 	}
 	event, err := github.ParseWebHook(github.WebHookType(r), payload)
