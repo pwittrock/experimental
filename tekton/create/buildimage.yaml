@@ -44,6 +44,8 @@ spec:
             value: "{{ .Ref }}"
           - name: url
             value: https://github.com/pwittrock/experimental
+  outputs:
+    resources:
     - name: builtImage
       resourceSpec:
         type: image
