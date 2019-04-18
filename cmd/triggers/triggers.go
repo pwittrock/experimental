@@ -40,7 +40,7 @@ import (
 var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
 
 var port *int32
-var path, tektonBranch *string
+var path, tektonBranch, tektonRepo *string
 var triggerRefWhitelist *[]string
 
 func GetCommand() *cobra.Command {
@@ -54,6 +54,7 @@ func GetCommand() *cobra.Command {
 	port = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
 	triggerRefWhitelist = c.Flags().StringSlice("refs", []string{"refs/heads/", "refs/tags/"}, "if not empty, white list triggers to these ref prefixes")
 	tektonBranch = c.Flags().String("tekton-branch", "tekton", "if not empty, use this branch for the Tekton config.")
+	tektonRepo = c.Flags().String("tekton-repo", "", "if not empty, use this repo for the Tekton config.  e.g. tektoncd/experimental")
 	path = c.Flags().String("path", "tekton", "look for Tekton configs in this directory")
 	return c
 }
@@ -145,11 +146,17 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 		return "", clean, err
 	}
 
-	r := fmt.Sprintf("https://github.com/%s.git", event.GetRepo().GetFullName())
-	loc := filepath.Join(dir, event.GetRepo().GetName())
+	repoName := strings.TrimSpace(*tektonRepo)
+	if len(repoName) == 0 {
+		repoName = event.GetRepo().GetFullName()
+	}
 
-	_, err = gitv4.PlainClone(loc, false, &gitv4.CloneOptions{
-		URL:           r,
+	destDir := filepath.Join(dir, event.GetRepo().GetName())
+
+	url := fmt.Sprintf("https://github.com/%s.git", repoName)
+	fmt.Printf("cloning %s into %s\n", url, destDir)
+	_, err = gitv4.PlainClone(destDir, false, &gitv4.CloneOptions{
+		URL:           url,
 		Progress:      os.Stdout,
 		Depth:         1,
 		ReferenceName: plumbing.NewBranchReferenceName(*tektonBranch),
@@ -162,8 +169,7 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 		return "", clean, err
 	}
 
-	fmt.Printf("cloned %s into %s\n", r, loc)
-	return filepath.Join(loc, *path), clean, nil
+	return filepath.Join(destDir, *path), clean, nil
 }
 
 func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) ([]*unstructured.Unstructured, error) {
@@ -179,18 +185,18 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 		return nil, nil
 	}
 
-	t, err := template.ParseGlob(path)
+	t := template.New("configs").Funcs(template.FuncMap{
+		"TrimPrefix": strings.TrimPrefix,
+		"TrimSuffix": strings.TrimSuffix,
+		"TrimSpace":  strings.TrimSpace,
+	})
+	t, err := t.ParseGlob(path)
 	if err != nil {
 		return nil, err
 	}
 	buf := &bytes.Buffer{}
 
 	for _, tmpl := range t.Templates() {
-		tmpl.Funcs(template.FuncMap{
-			"TrimPrefix": strings.TrimPrefix,
-			"TrimSuffix": strings.TrimSuffix,
-			"TrimSpace":  strings.TrimSpace,
-		})
 		err = tmpl.Execute(buf, Data{
 			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
 			URL: fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
