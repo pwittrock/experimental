@@ -221,16 +221,21 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 	}
 
 	for i := range configs {
+		fmt.Printf("generate config %s\n", configs[i].GetGenerateName())
 		if !s.Check(configs[i], triggerAnnotation, "push", false) {
+			fmt.Printf("doesn't match trigger\n")
 			continue
 		}
 		if !s.Check(configs[i], pushTypesAnnotation, rtype, true) {
+			fmt.Printf("doesn't match push-type\n")
 			continue
 		}
 		if !s.Check(configs[i], pushBranchesAnnotation, rval, true) {
+			fmt.Printf("doesn't match push-branch\n")
 			continue
 		}
 		if !s.Check(configs[i], baseRefAnnotation, event.GetBaseRef(), true) {
+			fmt.Printf("doesn't match base-ref\n")
 			continue
 		}
 		match = append(match, configs[i])
