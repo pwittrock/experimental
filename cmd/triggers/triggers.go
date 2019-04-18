@@ -221,7 +221,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 	}
 
 	for i := range configs {
-		fmt.Printf("generate config %s\n", configs[i].GetGenerateName())
+		fmt.Printf("checking %s\n", configs[i].GetGenerateName())
 		if !s.Check(configs[i], triggerAnnotation, "push", false) {
 			fmt.Printf("doesn't match trigger\n")
 			continue
@@ -238,6 +238,7 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 			fmt.Printf("doesn't match base-ref\n")
 			continue
 		}
+		fmt.Printf("create %s\n", configs[i].GetGenerateName())
 		match = append(match, configs[i])
 	}
 
