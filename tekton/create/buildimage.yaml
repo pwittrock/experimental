@@ -1,0 +1,54 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: build-image-
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/match: "refs/tags/release/"
+spec:
+  taskSpec:
+    serviceAccount: tekctl
+    inputs:
+      params:
+        - name: pathToDockerFile
+          description: The path to the dockerfile to build
+          default: /workspace/gitspace/Dockerfile
+        - name: pathToContext
+          description:
+            The build context used by Kaniko
+            (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
+          default: /workspace/gitspace/
+      resources:
+        - name: gitspace
+          type: git
+    outputs:
+      resources:
+        - name: builtImage
+          type: image
+    steps:
+      - name: build-and-push
+        image: gcr.io/kaniko-project/executor
+        command:
+          - /kaniko/executor
+        args:
+          - --dockerfile=${inputs.params.pathToDockerFile}
+          - --destination=${outputs.resources.builtImage.url}
+          - --context=${inputs.params.pathToContext}
+  inputs:
+    resources:
+    - name: gitspace
+      resourceSpec:
+        type: git
+        params:
+          - name: revision
+            value: {{ .Ref }}
+          - name: url
+            value: https://github.com/pwittrock/experimental
+  outputs:
+    resources:
+    - name: builtImage
+      resourceSpec:
+        type: image
+        params:
+        - name: url
+          value: gcr.io/pwittrock-dev/tekctl:{{ TrimPrefix .Ref "/refs/tags/" }}

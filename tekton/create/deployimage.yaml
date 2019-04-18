@@ -1,0 +1,71 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: deploy-image-
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/match: "refs/heads/dev"
+spec:
+  taskSpec:
+    serviceAccount: tekctl
+    inputs:
+      resources:
+        - name: gitspace
+          type: git
+        - name: gssecrets
+          type: storage
+    steps:
+      - name: cp-secret
+        image: ubuntu
+        command:
+          - cp
+        args:
+          - "/workspace/gssecrets/secret"
+          - "/workspace/gitspace/config/secret"
+      - name: cp-token
+        image: ubuntu
+        command:
+          - cp
+        args:
+          - "/workspace/gssecrets/token"
+          - "/workspace/gitspace/config/token"
+      - name: echo-gs
+        image: ubuntu
+        command:
+          - ls
+        args:
+          - "/workspace/gssecrets"
+      - name: kustomize
+        image: gcr.io/pwittrock-dev/kubectl
+        command:
+          - kubectl
+        args:
+          - "kustomize"
+          - "/workspace/gitspace/config"
+      - name: apply
+        image: gcr.io/pwittrock-dev/kubectl
+        command:
+          - kubectl
+        args:
+          - "apply"
+          - "-k=/workspace/gitspace/config/dev/us-west"
+  inputs:
+    resources:
+      - name: gitspace
+        resourceSpec:
+          type: git
+          params:
+            - name: revision
+              value: "{{ .Ref }}"
+            - name: url
+              value: https://github.com/pwittrock/experimental
+      - name: gssecrets
+        resourceSpec:
+          type: storage
+          params:
+            - name: type
+              value: gcs
+            - name: location
+              value: gs://pwittrock-dev
+            - name: dir
+              value: "y"
