@@ -52,4 +52,4 @@ spec:
         type: image
         params:
         - name: url
-          value: gcr.io/pwittrock-dev/tekctl:{{ TrimPrefix .Ref "/refs/tags/" }}
+          value: gcr.io/pwittrock-dev/tekctl:{{ TrimPrefix .Ref "refs/tags/release/" }}
