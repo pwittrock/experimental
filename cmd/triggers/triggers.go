@@ -186,14 +186,14 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 	}
 
 	t, err := template.ParseGlob(path)
+	if err != nil {
+		return nil, err
+	}
 	t = t.Funcs(template.FuncMap{
 		"TrimPrefix": strings.TrimPrefix,
 		"TrimSuffix": strings.TrimSuffix,
 		"TrimSpace":  strings.TrimSpace,
 	})
-	if err != nil {
-		return nil, err
-	}
 	buf := &bytes.Buffer{}
 
 	for _, tmpl := range t.Templates() {
