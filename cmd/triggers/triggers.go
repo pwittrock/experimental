@@ -38,9 +38,10 @@ import (
 )
 
 var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
-var p *int32
-var path, strip *string
-var refs, orgs, repos *[]string
+
+var port *int32
+var path, tektonBranch *string
+var triggerRefWhitelist *[]string
 
 func GetCommand() *cobra.Command {
 	c := &cobra.Command{
@@ -50,9 +51,10 @@ func GetCommand() *cobra.Command {
 		RunE:  RunE,
 	}
 	wiregithub.WebhookFlags(c)
-	p = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
-	path = c.Flags().String("path", "tekton", "")
-	strip = c.Flags().String("strip-tag-prefix", "release/", "")
+	port = c.Flags().Int32("port", 8080, "port to listen for webhook events on.")
+	triggerRefWhitelist = c.Flags().StringSlice("refs", []string{"refs/heads/", "refs/tags/"}, "if not empty, white list triggers to these ref prefixes")
+	tektonBranch = c.Flags().String("tekton-branch", "tekton", "if not empty, use this branch for the Tekton config.")
+	path = c.Flags().String("path", "tekton", "look for Tekton configs in this directory")
 	return c
 }
 
@@ -61,8 +63,8 @@ func RunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("listening on port %d...\n", *p)
-	return http.ListenAndServe(fmt.Sprintf(":%d", *p), t)
+	fmt.Printf("listening on port %d...\n", *port)
+	return http.ListenAndServe(fmt.Sprintf(":%d", *port), t)
 }
 
 type GitHubEventMonitor struct {
@@ -132,11 +134,6 @@ func (s *GitHubEventMonitor) DoPushDir(event *github.PushEvent, path, op string)
 }
 
 func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(), error) {
-	ref := event.GetRef()
-	if len(event.GetBaseRef()) > 0 {
-		ref = event.GetBaseRef()
-	}
-
 	dir, err := ioutil.TempDir(os.TempDir(), "git-clone")
 	if err != nil {
 		return "", nil, err
@@ -155,7 +152,7 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 		URL:           r,
 		Progress:      os.Stdout,
 		Depth:         1,
-		ReferenceName: plumbing.ReferenceName(ref),
+		ReferenceName: plumbing.NewBranchReferenceName(*tektonBranch),
 		Auth: &httpv4.BasicAuth{
 			Username: "", // anything except an empty string
 			Password: string(s.Secret),
@@ -170,17 +167,16 @@ func (s *GitHubEventMonitor) DoPushClone(event *github.PushEvent) (string, func(
 }
 
 func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) ([]*unstructured.Unstructured, error) {
-	var rtype, rval string
-	r := event.GetRef()
-	if strings.HasPrefix(r, "refs/heads/") {
-		rtype = "branch"
-		rval = strings.TrimPrefix(r, "refs/heads/")
-	} else if strings.HasPrefix(r, "refs/tags/") {
-		rtype = "tag"
-		rval = strings.TrimPrefix(r, "refs/tags/")
-		if strings.HasPrefix(rval, *strip) {
-			rval = strings.TrimPrefix(rval, *strip)
+	// Check if ref is whitelisted
+	found := false
+	for _, match := range *triggerRefWhitelist {
+		if strings.HasPrefix(event.GetRef(), match) {
+			found = true
+			break
 		}
+	}
+	if !found {
+		return nil, nil
 	}
 
 	t, err := template.ParseGlob(path)
@@ -190,12 +186,14 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 	buf := &bytes.Buffer{}
 
 	for _, tmpl := range t.Templates() {
-
+		tmpl.Funcs(template.FuncMap{
+			"TrimPrefix": strings.TrimPrefix,
+			"TrimSuffix": strings.TrimSuffix,
+			"TrimSpace":  strings.TrimSpace,
+		})
 		err = tmpl.Execute(buf, Data{
-			Ref:    strings.Replace(event.GetRef(), "refs/", "", -1),
-			URL:    fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
-			Tag:    rval,
-			Branch: rval,
+			Ref: strings.Replace(event.GetRef(), "refs/", "", -1),
+			URL: fmt.Sprintf("https://github.com/%s", event.Repo.GetFullName()),
 		})
 		if err != nil {
 			return nil, err
@@ -223,16 +221,8 @@ func (s *GitHubEventMonitor) GetResources(event *github.PushEvent, path string) 
 			fmt.Printf("doesn't match trigger\n")
 			continue
 		}
-		if !s.Check(configs[i], pushTypesAnnotation, rtype, true) {
+		if !s.CheckPrefix(configs[i], matchAnnotation, event.GetRef(), true) {
 			fmt.Printf("doesn't match push-type\n")
-			continue
-		}
-		if !s.Check(configs[i], pushBranchesAnnotation, rval, true) {
-			fmt.Printf("doesn't match push-branch\n")
-			continue
-		}
-		if !s.Check(configs[i], baseRefAnnotation, event.GetBaseRef(), true) {
-			fmt.Printf("doesn't match base-ref\n")
 			continue
 		}
 		fmt.Printf("create %s\n", configs[i].GetGenerateName())
@@ -255,10 +245,21 @@ func (s *GitHubEventMonitor) Check(obj *unstructured.Unstructured, annotation, v
 	return fi
 }
 
+func (s *GitHubEventMonitor) CheckPrefix(obj *unstructured.Unstructured, annotation, value string, d bool) bool {
+	fi := d
+	if v, found := obj.GetAnnotations()[annotation]; found {
+		fi = false
+		for _, p := range strings.Split(v, ",") {
+			if strings.HasPrefix(value, p) {
+				fi = true
+			}
+		}
+	}
+	return fi
+}
+
 const triggerAnnotation = "tekctl.tektoncd.dev/triggers"
-const pushTypesAnnotation = "tekctl.tektoncd.dev/push-types"
-const pushBranchesAnnotation = "tekctl.tektoncd.dev/push-branches"
-const baseRefAnnotation = "tekctl.tektoncd.dev/base-ref"
+const matchAnnotation = "tekctl.tektoncd.dev/match"
 
 func (s *GitHubEventMonitor) DoKubectlAll(c string, objs []*unstructured.Unstructured) error {
 	for i := range objs {
