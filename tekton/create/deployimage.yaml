@@ -48,7 +48,7 @@ spec:
           - kubectl
         args:
           - "apply"
-          - "-k=/workspace/gitspace/config"
+          - "-k=/workspace/gitspace/config/dev/us-west"
   inputs:
     resources:
       - name: gitspace
