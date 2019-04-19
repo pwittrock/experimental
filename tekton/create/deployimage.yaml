@@ -15,7 +15,7 @@ spec:
         type: git
       - name: gssecrets
         type: storage
-        targetPath: "gitspace/config/bases"
+        targetPath: "gitspace/config/bases/"
     steps:
     - name: apply
       image: gcr.io/pwittrock-dev/kubectl
@@ -24,12 +24,6 @@ spec:
       args:
         - "apply"
         - "-k=/workspace/gitspace/config/deploy-dev/us-west"
-    - name: wait
-      image: ubuntu
-      command:
-        - "sleep"
-      args:
-        - "10000"
   inputs:
     resources:
     - name: gitspace
@@ -47,7 +41,9 @@ spec:
           - name: type
             value: gcs
           - name: location
-            value: gs://pwittrock-dev/token
+            value: gs://pwittrock-dev
+          - name: dir
+            value: "y"
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
@@ -94,3 +90,5 @@ spec:
             value: gcs
           - name: location
             value: gs://pwittrock-dev
+          - name: dir
+            value: "y"
