@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
 metadata:
-  generateName: deploy-image-
+  generateName: dev-deploy-image-
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     # Push dev environment
@@ -48,7 +48,7 @@ spec:
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
 metadata:
-  generateName: deploy-image-
+  generateName: prod-deploy-image-
   annotations:
     tekctl.tektoncd.dev/triggers: "push"
     # Push prod environment
@@ -60,9 +60,10 @@ spec:
       resources:
         - name: gitspace
           type: git
+          targetPath: "/workspace/gitspace/"
         - name: gssecrets
           type: storage
-          targetPath: "/workspace/gitspace/config/"
+          targetPath: "/workspace/gitspace/config/bases/"
     steps:
       - name: apply
         image: gcr.io/pwittrock-dev/kubectl
