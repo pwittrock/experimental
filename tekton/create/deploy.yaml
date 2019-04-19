@@ -1,0 +1,67 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: dev-deploy-image-
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    # Push dev environment
+    tekctl.tektoncd.dev/match: "refs/heads/deploy-dev"
+spec:
+  taskRef: deploy-image-task
+  inputs:
+    params:
+      - name: pathToConfig
+        value: '/workspace/gitspace/config/deploy-dev/us-west'
+    resources:
+    - name: gitspace
+      resourceSpec:
+        type: git
+        params:
+          - name: revision
+            value: 'refs/heads/deploy-dev'
+          - name: url
+            value: https://github.com/pwittrock/experimental
+    - name: gssecrets
+      resourceSpec:
+        type: storage
+        params:
+          - name: type
+            value: gcs
+          - name: location
+            value: gs://pwittrock-dev
+          - name: dir
+            value: "y"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: prod-deploy-image-
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    # Push dev environment
+    tekctl.tektoncd.dev/match: "refs/heads/deploy-dev"
+spec:
+  taskRef: deploy-image-task
+  inputs:
+    params:
+      - name: pathToConfig
+        value: '/workspace/gitspace/config/prod-dev/us-west'
+    resources:
+      - name: gitspace
+        resourceSpec:
+          type: git
+          params:
+            - name: revision
+              value: 'refs/heads/deploy-prod'
+            - name: url
+              value: https://github.com/pwittrock/experimental
+      - name: gssecrets
+        resourceSpec:
+          type: storage
+          params:
+            - name: type
+              value: gcs
+            - name: location
+              value: gs://pwittrock-dev
+            - name: dir
+              value: "y"

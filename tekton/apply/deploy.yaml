@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  name: deploy-image-task
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    tekctl.tektoncd.dev/match: "refs/heads/tekton"
+spec:
+  taskSpec:
+    serviceAccount: tekctl
+    inputs:
+      resources:
+        - name: gitspace
+          type: git
+        - name: gssecrets
+          type: storage
+          targetPath: "gitspace/config/bases/"
+    steps:
+      - name: apply
+        image: gcr.io/pwittrock-dev/kubectl
+        command: ['kubectl']
+        args: ['apply', '-k=${inputs.params.pathToConfig}']

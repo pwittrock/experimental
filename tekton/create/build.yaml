@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: build-image-
+  annotations:
+    tekctl.tektoncd.dev/triggers: "push"
+    # Build images on tagged releases
+    tekctl.tektoncd.dev/match: "refs/tags/release/"
+spec:
+  taskRef: 'build-image-task'
+  inputs:
+    resources:
+    - name: gitspace
+      resourceSpec:
+        type: git
+        params:
+          - name: revision
+            value: {{ .Ref }}
+          - name: url
+            value: https://github.com/pwittrock/experimental
+  outputs:
+    resources:
+    - name: builtImage
+      resourceSpec:
+        type: image
+        params:
+        - name: url
+          value: gcr.io/pwittrock-dev/tekctl:{{ TrimPrefix .Ref "refs/tags/release/" }}
