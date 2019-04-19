@@ -15,7 +15,7 @@ spec:
         type: git
       - name: gssecrets
         type: storage
-        targetPath: "gitspace/config/bases/token2"
+        targetPath: "gitspace/config/bases"
     steps:
     - name: apply
       image: gcr.io/pwittrock-dev/kubectl
