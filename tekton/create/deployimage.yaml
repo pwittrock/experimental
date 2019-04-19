@@ -24,6 +24,13 @@ spec:
       args:
         - "apply"
         - "-k=/workspace/gitspace/config/deploy-dev/us-west"
+    - name: wait
+      image: ubuntu
+      command:
+        - bash
+      args:
+        - "sleep"
+        - "10000"
   inputs:
     resources:
     - name: gitspace
