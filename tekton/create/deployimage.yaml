@@ -16,14 +16,14 @@ spec:
       - name: gssecrets
         type: storage
         targetPath: "gitspace/config/"
-  steps:
-  - name: apply
-    image: gcr.io/pwittrock-dev/kubectl
-    command:
-      - kubectl
-    args:
-      - "apply"
-      - "-k=/workspace/gitspace/config/deploy-dev/us-west"
+    steps:
+    - name: apply
+      image: gcr.io/pwittrock-dev/kubectl
+      command:
+        - kubectl
+      args:
+        - "apply"
+        - "-k=/workspace/gitspace/config/deploy-dev/us-west"
   inputs:
     resources:
     - name: gitspace
