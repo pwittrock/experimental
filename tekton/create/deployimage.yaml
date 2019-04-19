@@ -60,10 +60,9 @@ spec:
       resources:
       - name: gitspace
         type: git
-        targetPath: "/workspace/gitspace/"
       - name: gssecrets
         type: storage
-        targetPath: "/workspace/gitspace/config/bases/"
+        targetPath: "gitspace/config/bases/"
     steps:
     - name: apply
       image: gcr.io/pwittrock-dev/kubectl
