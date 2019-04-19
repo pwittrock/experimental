@@ -42,6 +42,7 @@ var ProviderSet = wire.NewSet(wirecli.ProviderSet, GitHubEventMonitor{})
 var port *int32
 var path, tektonBranch, tektonRepo *string
 var triggerRefWhitelist *[]string
+var lg *bool
 
 func GetCommand() *cobra.Command {
 	c := &cobra.Command{
@@ -56,6 +57,7 @@ func GetCommand() *cobra.Command {
 	tektonBranch = c.Flags().String("tekton-branch", "tekton", "if not empty, use this branch for the Tekton config.")
 	tektonRepo = c.Flags().String("tekton-repo", "", "if not empty, use this repo for the Tekton config.  e.g. tektoncd/experimental")
 	path = c.Flags().String("path", "tekton", "look for Tekton configs in this directory")
+	lg = c.Flags().Bool("log-errors", false, "")
 	return c
 }
 
@@ -76,6 +78,9 @@ type GitHubEventMonitor struct {
 func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	payload, err := github.ValidatePayload(r, []byte(s.Secret))
 	if err != nil {
+		if *lg {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
 		return
 	}
 	event, err := github.ParseWebHook(github.WebHookType(r), payload)
