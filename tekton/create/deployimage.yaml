@@ -47,9 +47,7 @@ spec:
           - name: type
             value: gcs
           - name: location
-            value: gs://pwittrock-dev
-          - name: dir
-            value: "y"
+            value: gs://pwittrock-dev/token
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
@@ -95,4 +93,4 @@ spec:
           - name: type
             value: gcs
           - name: location
-            value: gs://pwittrock-dev/token
+            value: gs://pwittrock-dev
