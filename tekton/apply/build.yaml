@@ -6,28 +6,27 @@ metadata:
     tekctl.tektoncd.dev/triggers: "push"
     tekctl.tektoncd.dev/match: "refs/heads/tekton"
 spec:
-  spec:
-    inputs:
-      params:
-        - name: pathToDockerFile
-          description: The path to the dockerfile to build
-          default: /workspace/gitspace/Dockerfile
-        - name: pathToContext
-          description: The build context used by Kaniko
-          default: /workspace/gitspace/
-      resources:
-        - name: gitspace
-          type: git
-    outputs:
-      resources:
-        - name: builtImage
-          type: image
-    steps:
-      - name: build-and-push
-        image: gcr.io/kaniko-project/executor
-        command: ['/kaniko/executor']
-        args:
-          - # TODO: Get rid of these flags and make them env vars
-          - --dockerfile=${inputs.params.pathToDockerFile}
-          - --destination=${outputs.resources.builtImage.url}
-          - --context=${inputs.params.pathToContext}
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor
+      command: ['/kaniko/executor']
+      args:
+        - # TODO: Get rid of these flags and make them env vars
+        - --dockerfile=${inputs.params.pathToDockerFile}
+        - --destination=${outputs.resources.builtImage.url}
+        - --context=${inputs.params.pathToContext}
+  inputs:
+    params:
+      - name: pathToDockerFile
+        description: The path to the dockerfile to build
+        default: /workspace/gitspace/Dockerfile
+      - name: pathToContext
+        description: The build context used by Kaniko
+        default: /workspace/gitspace/
+    resources:
+      - name: gitspace
+        type: git
+  outputs:
+    resources:
+      - name: builtImage
+        type: image
