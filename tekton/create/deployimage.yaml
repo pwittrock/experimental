@@ -15,21 +15,8 @@ spec:
           type: git
         - name: gssecrets
           type: storage
-    steps:
-      - name: cp-secret
-        image: ubuntu
-        command:
-          - cp
-        args:
-          - "/workspace/gssecrets/secret"
-          - "/workspace/gitspace/config/secret"
-      - name: cp-token
-        image: ubuntu
-        command:
-          - cp
-        args:
-          - "/workspace/gssecrets/token"
-          - "/workspace/gitspace/config/token"
+          targetPath: "/workspace/gitspace/config/"
+  steps:
       - name: apply
         image: gcr.io/pwittrock-dev/kubectl
         command:
@@ -75,21 +62,8 @@ spec:
           type: git
         - name: gssecrets
           type: storage
+          targetPath: "/workspace/gitspace/config/"
     steps:
-      - name: cp-secret
-        image: ubuntu
-        command:
-          - cp
-        args:
-          - "/workspace/gssecrets/secret"
-          - "/workspace/gitspace/config/secret"
-      - name: cp-token
-        image: ubuntu
-        command:
-          - cp
-        args:
-          - "/workspace/gssecrets/token"
-          - "/workspace/gitspace/config/token"
       - name: apply
         image: gcr.io/pwittrock-dev/kubectl
         command:
