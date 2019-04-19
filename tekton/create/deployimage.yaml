@@ -11,39 +11,39 @@ spec:
     serviceAccount: tekctl
     inputs:
       resources:
-        - name: gitspace
-          type: git
-        - name: gssecrets
-          type: storage
-          targetPath: "gitspace/config/"
+      - name: gitspace
+        type: git
+      - name: gssecrets
+        type: storage
+        targetPath: "gitspace/config/"
   steps:
-      - name: apply
-        image: gcr.io/pwittrock-dev/kubectl
-        command:
-          - kubectl
-        args:
-          - "apply"
-          - "-k=/workspace/gitspace/config/deploy-dev/us-west"
+  - name: apply
+    image: gcr.io/pwittrock-dev/kubectl
+    command:
+      - kubectl
+    args:
+      - "apply"
+      - "-k=/workspace/gitspace/config/deploy-dev/us-west"
   inputs:
     resources:
-      - name: gitspace
-        resourceSpec:
-          type: git
-          params:
-            - name: revision
-              value: "{{ .Ref }}"
-            - name: url
-              value: https://github.com/pwittrock/experimental
-      - name: gssecrets
-        resourceSpec:
-          type: storage
-          params:
-            - name: type
-              value: gcs
-            - name: location
-              value: gs://pwittrock-dev
-            - name: dir
-              value: "y"
+    - name: gitspace
+      resourceSpec:
+        type: git
+        params:
+          - name: revision
+            value: "{{ .Ref }}"
+          - name: url
+            value: https://github.com/pwittrock/experimental
+    - name: gssecrets
+      resourceSpec:
+        type: storage
+        params:
+          - name: type
+            value: gcs
+          - name: location
+            value: gs://pwittrock-dev
+          - name: dir
+            value: "y"
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
@@ -58,37 +58,37 @@ spec:
     serviceAccount: tekctl
     inputs:
       resources:
-        - name: gitspace
-          type: git
-          targetPath: "/workspace/gitspace/"
-        - name: gssecrets
-          type: storage
-          targetPath: "/workspace/gitspace/config/bases/"
+      - name: gitspace
+        type: git
+        targetPath: "/workspace/gitspace/"
+      - name: gssecrets
+        type: storage
+        targetPath: "/workspace/gitspace/config/bases/"
     steps:
-      - name: apply
-        image: gcr.io/pwittrock-dev/kubectl
-        command:
-          - kubectl
-        args:
-          - "apply"
-          - "-k=/workspace/gitspace/config/deploy-prod/us-west"
+    - name: apply
+      image: gcr.io/pwittrock-dev/kubectl
+      command:
+        - kubectl
+      args:
+        - "apply"
+        - "-k=/workspace/gitspace/config/deploy-prod/us-west"
   inputs:
     resources:
-      - name: gitspace
-        resourceSpec:
-          type: git
-          params:
-            - name: revision
-              value: "{{ .Ref }}"
-            - name: url
-              value: https://github.com/pwittrock/experimental
-      - name: gssecrets
-        resourceSpec:
-          type: storage
-          params:
-            - name: type
-              value: gcs
-            - name: location
-              value: gs://pwittrock-dev
-            - name: dir
-              value: "y"
+    - name: gitspace
+      resourceSpec:
+        type: git
+        params:
+          - name: revision
+            value: "{{ .Ref }}"
+          - name: url
+            value: https://github.com/pwittrock/experimental
+    - name: gssecrets
+      resourceSpec:
+        type: storage
+        params:
+          - name: type
+            value: gcs
+          - name: location
+            value: gs://pwittrock-dev
+          - name: dir
+            value: "y"
