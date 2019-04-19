@@ -15,7 +15,7 @@ spec:
           type: git
         - name: gssecrets
           type: storage
-          targetPath: "/workspace/gitspace/config/"
+          targetPath: "gitspace/config/"
   steps:
       - name: apply
         image: gcr.io/pwittrock-dev/kubectl
