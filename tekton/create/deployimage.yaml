@@ -27,9 +27,8 @@ spec:
     - name: wait
       image: ubuntu
       command:
-        - bash
-      args:
         - "sleep"
+      args:
         - "10000"
   inputs:
     resources:
