@@ -7,7 +7,8 @@ metadata:
     # Push dev environment
     tekctl.tektoncd.dev/match: "refs/heads/deploy-dev"
 spec:
-  taskRef: deploy-image-task
+  taskRef:
+    name: deploy-image-task
   inputs:
     params:
       - name: pathToConfig

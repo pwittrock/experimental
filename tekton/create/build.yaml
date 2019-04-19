@@ -7,7 +7,8 @@ metadata:
     # Build images on tagged releases
     tekctl.tektoncd.dev/match: "refs/tags/release/"
 spec:
-  taskRef: 'build-image-task'
+  taskRef:
+    name: 'build-image-task'
   inputs:
     resources:
     - name: gitspace
