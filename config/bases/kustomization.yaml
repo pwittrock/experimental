@@ -15,5 +15,5 @@ secretGenerator:
 
 images:
   - name: tekctl
-    newTag: "r1"
+    newTag: "r4"
     newName: gcr.io/pwittrock-dev/tekctl
