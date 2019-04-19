@@ -15,8 +15,14 @@ spec:
         type: git
       - name: gssecrets
         type: storage
-        targetPath: "gitspace/config/bases/"
+        targetPath: "gitspace/config/bases2/"
     steps:
+    - name: rm
+      image: ubunch
+      command:
+        - cat
+      args:
+        - "gitspace/config/bases/secret"
     - name: apply
       image: gcr.io/pwittrock-dev/kubectl
       command:
